@@ -62,7 +62,7 @@ install:
       rmdir c:\Python35-x64 /s /q
       cp '%REDIST%' installer/
       cd ..\..
-      curl.exe -L -o webkit.7z %DOWNLOAD%
+      curl.exe -L -o webkit.7z %DOWNLOADQT%
       7z x webkit.7z -y
       set PATH=%PYTHON%;%PYTHON%\Scripts;%QT%\bin;%INNO%;%PATH%
       echo 'PATH = %PATH%'
@@ -116,6 +116,7 @@ before_build:
 - cmd: |-
     curl.exe -L -o gdrive.exe %GDRIVE%
     %APPVEYOR_BUILD_FOLDER%\build\gdrive.exe version
+    qmake -v
     call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %PLATFORM% -vcvars_ver=14.1
 
 - sh: |-
