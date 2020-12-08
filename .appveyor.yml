@@ -95,6 +95,21 @@ install:
       else
         brew install gdrive
         brew install xz
+        pwd
+        cd ~
+        wget $DOWNLOADQT
+        tar xzf Qt5129.tar.xz
+        export MYQTHOME=${HOME}/Qt5129
+        export PATH=${PATH}:${MYQTHOME}/bin
+        sudo mkdir -p /Users/kbhend/Qt5129
+        sudo chown -R appveyor /Users/kbhend/
+        cp -R ~/Qt5129/plugins /Users/kbhend/Qt5129
+        mkdir Frameworks
+        cd ./Frameworks
+        wget $DOWNLOADPY
+        tar xzf Python.framework.tar.xz
+        export MYDEST=${HOME}/Frameworks
+        export PATH=${MYDEST}/Python.framework/Versions/${PY_VER}/bin:${PATH}
       fi
 
 
@@ -112,33 +127,21 @@ only_commits:
 
 before_build:
 - mkdir build
-- cd %APPVEYOR_BUILD_FOLDER%\build
+
 - cmd: |-
+    cd %APPVEYOR_BUILD_FOLDER%\build
     curl.exe -L -o gdrive.exe %GDRIVE%
     %APPVEYOR_BUILD_FOLDER%\build\gdrive.exe version
     qmake -v
     call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %PLATFORM% -vcvars_ver=14.1
 
 - sh: |-
+    cd $APPVEYOR_BUILD_FOLDER/build
     if [ $CI_LINUX == "true" ]
     then
       pwd
     else
       pwd
-      cd ~
-      wget $DOWNLOADQT
-      tar xzf Qt5129.tar.xz
-      export MYQTHOME=${HOME}/Qt5129
-      export PATH=${PATH}:${MYQTHOME}/bin
-      sudo mkdir -p /Users/kbhend/Qt5129
-      sudo chown -R appveyor /Users/kbhend/
-      cp -R ~/Qt5129/plugins /Users/kbhend/Qt5129
-      mkdir Frameworks
-      cd ./Frameworks
-      wget $DOWNLOADPY
-      tar xzf Python.framework.tar.xz
-      export MYDEST=${HOME}/Frameworks
-      export PATH=${MYDEST}/Python.framework/Versions/${PY_VER}/bin:${PATH}
 
     
 build_script:
