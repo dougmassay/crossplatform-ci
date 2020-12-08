@@ -127,9 +127,8 @@ only_commits:
     - 3rdparty/
 
 before_build:
-- mkdir build
-
 - cmd: |-
+    mkdir %APPVEYOR_BUILD_FOLDER%\build
     cd %APPVEYOR_BUILD_FOLDER%\build
     curl.exe -L -o gdrive.exe %GDRIVE%
     %APPVEYOR_BUILD_FOLDER%\build\gdrive.exe version
@@ -137,6 +136,7 @@ before_build:
     call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %PLATFORM% -vcvars_ver=14.1
 
 - sh: |-
+    mkdir $APPVEYOR_BUILD_FOLDER/build
     cd $APPVEYOR_BUILD_FOLDER/build
     if [ $CI_LINUX == "true" ]
     then
