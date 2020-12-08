@@ -1,0 +1,160 @@
+version: '1.0.0-{build}'
+
+branches:
+  only:
+  - master
+  - /\d+\.\d+\.\d+(-\d+)?/
+  
+environment:
+  global:
+      GDRIVE_REFRESH_TOKEN:
+        secure: +J2q/4lkiBXik5Ttvt06vpNiWBjNIXx+jFnYw1rOR9sLkyksyXGj+NeNKQB8kPwE
+      GDRIVE_DIR:
+        secure: e/trZFJnPzo9saqwWWn6+E3ZPoItqflSviT92eeH3Qk76GuEHrPk9DrcG1bh3SNX
+  matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      INNO: C:\Program Files (x86)\Inno Setup 6
+      REDIST: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Redist\MSVC\%RedistVersion%\vcredist_%PLATFORM%.exe
+      DOWNLOADQT: https://github.com/dougmassay/win-qtwebkit-5.212/releases/download/v5.212-1/MyQt%PLATFORM%_5.12.9_VS2017_WE.7z
+      GDRIVE: https://github.com/dougmassay/win-qtwebkit-5.212/releases/download/v5.212-1/gdrive-windows-x64.exe
+      QT: C:\MyQtx64_WE\Qt5.12.9
+      PYTHON: C:\Python38-x64
+      CMAKE64BIT: -DWIN_INSTALLER_USE_64BIT_CRT=1
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      MY_VAR: value3
+    - APPVEYOR_BUILD_WORKER_IMAGE: macOS
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      MACOSX_DEPLOYMENT_TARGET: 10.12
+      DOWNLOADQT: https://github.com/kevinhendricks/BuildSigilOnMac/releases/download/for_sigil_1.0.0/Qt5129.tar.xz
+      DOWNLOADPY: https://github.com/kevinhendricks/BuildSigilOnMac/releases/download/for_sigil_1.0.0/Python.framework.tar.xz
+      GDRIVE: https://github.com/dougmassay/win-qtwebkit-5.212/releases/download/v5.212-1/gdrive-windows-x64.exe
+      PY_VER: 3.8
+      QT: C:\MyQtx64_WE\Qt5.12.9
+      MY_VAR: value4
+
+init:
+  - cmd: set /p RedistVersion=<"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\Microsoft.VCRedistVersion.default.txt"
+  - ps: $commit = $env:APPVEYOR_REPO_COMMIT.SubString(0,7)
+  - ps: $timestamp = $env:APPVEYOR_REPO_COMMIT_TIMESTAMP.SubString(0,10)
+  - ps: Update-AppveyorBuild -Version ("{0}-{1}-{2}" -f $env:APPVEYOR_REPO_BRANCH, $commit, $timestamp)
+
+clone_script:
+- ps: >-
+    if(-not $env:APPVEYOR_PULL_REQUEST_NUMBER) {
+      git clone -q --depth=1 --branch=$env:APPVEYOR_REPO_BRANCH https://github.com/$env:APPVEYOR_REPO_NAME.git $env:APPVEYOR_BUILD_FOLDER
+      git checkout -qf $env:APPVEYOR_REPO_COMMIT
+    } else {
+      git clone -q --depth=1 https://github.com/$env:APPVEYOR_REPO_NAME.git $env:APPVEYOR_BUILD_FOLDER
+      git fetch -q origin +refs/pull/$env:APPVEYOR_PULL_REQUEST_NUMBER/merge:
+      git checkout -qf FETCH_HEAD
+    }
+    
+    Set-Location $env:APPVEYOR_BUILD_FOLDER
+
+install:
+  - cmd: |-
+      choco install ninja
+      rmdir c:\cygwin /s /q
+      rmdir c:\Python35 /s /q
+      rmdir c:\Python35-x64 /s /q
+      cp '%REDIST%' installer/
+      cd ..\..
+      curl.exe -L -o webkit.7z %DOWNLOAD%
+      7z x webkit.7z -y
+      set PATH=%PYTHON%;%PYTHON%\Scripts;%QT%\bin;%INNO%;%PATH%
+      echo 'PATH = %PATH%'
+      python -m pip install --upgrade pip
+      pip3.8 install six==1.15.0
+      pip3.8 install html5lib==1.1
+      pip3.8 install regex==2020.6.8
+      pip3.8 install css-parser==1.0.4
+      pip3.8 install cssselect==1.1.0
+      pip3.8 install urllib3==1.25.9
+      pip3.8 install certifi==2020.6.20
+      pip3.8 install dulwich==0.20.5 --global-option="--pure"
+      pip3.8 install chardet==3.0.4
+      pip3.8 install pillow==7.1.2
+      pip3.8 install PyQt5==5.12.3 PyQt5-sip==4.19.19
+      pip3.8 install lxml==4.5.1
+
+  - sh: |-
+      if [ $CI_LINUX == "true" ]
+      then
+        sudo apt-get update && apt-get install -y pkg-config cmake cmake-data zlib1g-dev build-essential ninja
+        sudo apt-get install -y qtbase5-dev qttools5-dev qttools5-dev-tools qtwebengine5-dev qt5-default qtchooser
+        sudo apt-get install -y libhunspell-dev libminizip-dev libpcre3-dev
+        sudo apt-get install -y python3-dev python3-pip python3-lxml python3-six
+        cd $APPVEYOR_BUILD_FOLDER/build
+        which qmake
+        qmake -v
+        python3 --version
+        gcc --version          
+      else
+        brew install gdrive
+        brew install xz
+      fi
+
+
+
+only_commits:
+  files:
+    - CMakeLists.txt
+    - .appveyor.yml
+    - installer/Sigil.iss
+    - src/
+    - ci_scripts/
+    - internal/
+    - cmake_extras/
+    - 3rdparty/
+
+before_build:
+- mkdir build
+- cd %APPVEYOR_BUILD_FOLDER%\build
+- cmd: |-
+    curl.exe -L -o gdrive.exe %GDRIVE%
+    %APPVEYOR_BUILD_FOLDER%\build\gdrive.exe version
+    call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %PLATFORM% -vcvars_ver=14.1
+
+- sh: |-
+    if [ $CI_LINUX == "true" ]
+    then
+      pwd
+    else
+      pwd
+      cd ~
+      wget $DOWNLOADQT
+      tar xzf Qt5129.tar.xz
+      export MYQTHOME=${HOME}/Qt5129
+      export PATH=${PATH}:${MYQTHOME}/bin
+      sudo mkdir -p /Users/kbhend/Qt5129
+      sudo chown -R appveyor /Users/kbhend/
+      cp -R ~/Qt5129/plugins /Users/kbhend/Qt5129
+      mkdir Frameworks
+      cd ./Frameworks
+      wget $DOWNLOADPY
+      tar xzf Python.framework.tar.xz
+      export MYDEST=${HOME}/Frameworks
+      export PATH=${MYDEST}/Python.framework/Versions/${PY_VER}/bin:${PATH}
+
+    
+build_script:
+- cmd: |-
+    ninja -j4
+- sh: |-
+    make -j4
+ 
+
+after_build:
+- cmd: |-
+    ninja -j4 makeinstaller
+
+deploy_script:
+- ps: >-
+    if($isWindows -and (-not $env:APPVEYOR_PULL_REQUEST_NUMBER)) {
+        python --version
+        python ..\ci_scripts\gddeploy.py
+    }
+
+#artifacts:
+#    path: build\installer\*.exe
+
