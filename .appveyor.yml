@@ -4,6 +4,9 @@ branches:
   only:
   - master
   - /\d+\.\d+\.\d+(-\d+)?/
+
+platform:
+- x64
   
 environment:
   global:
