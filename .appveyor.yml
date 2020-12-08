@@ -95,6 +95,7 @@ install:
       else
         brew install gdrive
         brew install xz
+        brew install wget
         pwd
         cd ~
         wget $DOWNLOADQT
@@ -139,9 +140,12 @@ before_build:
     cd $APPVEYOR_BUILD_FOLDER/build
     if [ $CI_LINUX == "true" ]
     then
+      echo "Linux"
       pwd
     else
       pwd
+      echo "Mac"
+    fi
 
     
 build_script:
